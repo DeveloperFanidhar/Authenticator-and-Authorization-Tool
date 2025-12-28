@@ -1,1 +1,1 @@
-console.log("TypeScript Setup Verified.");
+import "./server";

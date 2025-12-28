@@ -1,0 +1,31 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createApp = createApp;
+const express_1 = __importDefault(require("express"));
+const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
+// Error Handler
+const error_middleware_1 = require("./middlewares/error.middleware");
+function createApp() {
+    const app = (0, express_1.default)();
+    // Global Middlewares
+    app.use(express_1.default.json());
+    // Health Check
+    app.get("/health", (req, res) => {
+        res.status(200).json({
+            status: "ok",
+            uptime: process.uptime()
+        });
+    });
+    // Auth Routes
+    app.use("/auth", auth_routes_1.default);
+    // 404 handler
+    app.use((req, res) => {
+        res.status(404).json({ error: "Route not found" });
+    });
+    // Global error handler (MUST be last)
+    app.use(error_middleware_1.errorHandler);
+    return app;
+}
