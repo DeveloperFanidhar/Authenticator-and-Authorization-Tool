@@ -1,11 +1,26 @@
-export interface IUser{
-    email:string;
-    passwordHash: string;
-    isEmailVerified: boolean;
+export interface IUser {
+  email: string;
+  passwordHash: string;
 
-    failedLoginAttempts: number;
-    lockUntil: Date | null;
+  role: "USER" | "ADMIN";
 
-    createdAt: Date;
-    updatedAt: Date;
+  isEmailVerified: boolean;
+
+  failedLoginAttempts: number;
+  lockUntil: Date | null;
+
+  // =========================
+  // PASSWORD RESET
+  // =========================
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
+
+  // =========================
+  // EMAIL VERIFICATION
+  // =========================
+  emailVerificationToken?: string | null;
+  emailVerificationExpires?: Date | null;
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }

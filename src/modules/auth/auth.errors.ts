@@ -1,13 +1,22 @@
-import { AppError } from "../../errors/app.error";
+import { AppError } from "../../utils/app-error";
 
 export class UserAlreadyExistsError extends AppError {
   constructor(email: string) {
-    super(`User with email ${email} already exists`, 409);
+    super(`User already exists with email: ${email}`, 409);
   }
 }
 
-export class InvalidRegistrationError extends AppError {
-  constructor(message: string) {
-    super(message, 400);
+export class InvalidCredentialsError extends AppError {
+  constructor() {
+    super("Invalid email or password", 401);
+  }
+}
+
+export class AccountLockedError extends AppError {
+  constructor(lockUntil: Date) {
+    super(
+      `Account locked until ${lockUntil.toISOString()}`,
+      423
+    );
   }
 }

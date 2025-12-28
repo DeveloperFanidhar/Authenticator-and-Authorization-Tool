@@ -1,10 +1,21 @@
 import { Router } from "express";
 import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
+import { UserRepository } from "../user/user.repository";
 
 const router = Router();
-const authController = new AuthController();
 
-// Auth Routes
+const userRepository = new UserRepository();
+const authService = new AuthService(userRepository);
+const authController = new AuthController(authService);
+
 router.post("/register", authController.register);
+router.post("/login", authController.login);
+router.post("/refresh", authController.refresh);
+router.post("/logout", authController.logout);
+
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
+router.post("/verify-email", authController.verifyEmail);
 
 export default router;

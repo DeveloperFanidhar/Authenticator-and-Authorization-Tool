@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errorHandler = errorHandler;
-const app_error_1 = require("../errors/app.error");
-function errorHandler(err, req, res, next) {
-    // Known, Operational Errors
+const app_error_1 = require("../utils/app-error");
+function errorHandler(err, req, res, _next) {
+    // Default values
+    let statusCode = 500;
+    let message = "Internal Server Error";
     if (err instanceof app_error_1.AppError) {
-        return res.status(err.statusCode).json({
-            error: err.message
-        });
+        statusCode = err.statusCode;
+        message = err.message;
     }
-    // Unknown / programmer errors
-    console.error("Unhandled error: ", err);
-    return res.status(500).json({
-        error: "internal server error"
+    res.status(statusCode).json({
+        success: false,
+        error: message
     });
 }

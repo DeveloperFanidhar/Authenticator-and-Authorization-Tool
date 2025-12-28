@@ -1,16 +1,21 @@
-import {createApp} from "./app";
+import "dotenv/config";
+import { createApp } from "./app";
+import { connectDatabase } from "./database/database";
+
 const PORT = process.env.PORT || 3000;
-const app = createApp();
-const server = app.listen(PORT, () => {
+
+async function startServer() {
+  // 🔒 DB MUST CONNECT FIRST
+  await connectDatabase();
+
+  const app = createApp();
+
+  app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});
-// Graceful Shutdown
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
-function shutdown(signal: string){
-    console.log(`Received ${signal}. Shutting down gracefully...`);
-    server.close(() => {
-        console.log("HTTP server closed.");
-        process.exit(0);
-    });
+  });
 }
+
+startServer().catch((err) => {
+  console.error("Startup failed:", err);
+  process.exit(1);
+});

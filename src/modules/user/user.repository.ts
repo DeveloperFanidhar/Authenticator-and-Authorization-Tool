@@ -1,46 +1,146 @@
+import crypto from "crypto";
 import { UserModel } from "./user.model";
-import { IUser } from "./user.types";
-import { Types } from "mongoose";
+import { Role } from "../auth/rbac.constants";
 
-export class UserRepository{
-    async createUser(data: {
-        email: string;
-        passwordHash: string;
-    }): Promise<IUser> {
-        const user = new UserModel({
-            email: data.email,
-            passwordHash: data.passwordHash
-        });
-        return user.save();
-    }
+export class UserRepository {
+  async findByEmail(email: string) {
+    return UserModel.findOne({
+      email: email.toLowerCase().trim()
+    });
+  }
 
-    async findByEmail(email: string): Promise<IUser | null> {
-        return UserModel.findOne({ email }).exec();
-    }
+  async findById(id: string) {
+    return UserModel.findById(id);
+  }
 
-    async findById(userId: string): Promise<IUser | null> {
-        if(!Types.ObjectId.isValid(userId)){
-            return null;
-        }
-        return UserModel.findById(userId).exec();
-    }
+  async findAll() {
+    return UserModel.find().sort({ createdAt: -1 });
+  }
 
-    async incrementFailedLogin(userId: string): Promise<void> {
-        await UserModel.findByIdAndUpdate(userId, {
-            $inc: { failedLoginAttempts: 1 }
-        }).exec();
-    }
+  async createUser(data: {
+    email: string;
+    passwordHash: string;
+    role?: Role;
+  }) {
+    return UserModel.create(data);
+  }
 
-    async resetFailedLogin(userId: string): Promise<void> {
-        await UserModel.findByIdAndUpdate(userId, {
-            failedLoginAttempts: 0,
-            lockUntil: null
-        }).exec();
-    }
+  async updateUserRole(userId: string, role: Role) {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true }
+    );
+  }
 
-    async lockAccount(userId: string, until: Date): Promise<void> {
-        await UserModel.findByIdAndUpdate(userId, {
-            lockUntil: until
-        }).exec();
-    }
+  async incrementFailedLogin(userId: string) {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      { $inc: { failedLoginAttempts: 1 } },
+      { new: true }
+    );
+  }
+
+  async resetFailedLogin(userId: string) {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        failedLoginAttempts: 0,
+        lockUntil: null
+      },
+      { new: true }
+    );
+  }
+
+  async lockAccount(userId: string, until: Date) {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        failedLoginAttempts: 0,
+        lockUntil: until
+      },
+      { new: true }
+    );
+  }
+
+  // =========================
+  // PASSWORD RESET
+  // =========================
+
+  async setPasswordResetToken(userId: string) {
+    const raw = crypto.randomBytes(32).toString("hex");
+
+    const hashed = crypto
+      .createHash("sha256")
+      .update(raw)
+      .digest("hex");
+
+    await UserModel.findByIdAndUpdate(userId, {
+      passwordResetToken: hashed,
+      passwordResetExpires: new Date(Date.now() + 15 * 60 * 1000)
+    });
+
+    return raw;
+  }
+
+  async findByResetToken(token: string) {
+    const hashed = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    return UserModel.findOne({
+      passwordResetToken: hashed,
+      passwordResetExpires: { $gt: new Date() }
+    });
+  }
+
+  async clearResetToken(userId: string) {
+    await UserModel.findByIdAndUpdate(userId, {
+      passwordResetToken: null,
+      passwordResetExpires: null
+    });
+  }
+
+  // =========================
+  // EMAIL VERIFICATION
+  // =========================
+
+  async setEmailVerificationToken(userId: string) {
+    const raw = crypto.randomBytes(32).toString("hex");
+
+    const hashed = crypto
+      .createHash("sha256")
+      .update(raw)
+      .digest("hex");
+
+    await UserModel.findByIdAndUpdate(userId, {
+      emailVerificationToken: hashed,
+      emailVerificationExpires: new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+      )
+    });
+
+    return raw;
+  }
+
+  async findByEmailVerificationToken(token: string) {
+    const hashed = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    return UserModel.findOne({
+      emailVerificationToken: hashed,
+      emailVerificationExpires: { $gt: new Date() }
+    });
+  }
+
+  async verifyEmail(userId: string) {
+    await UserModel.findByIdAndUpdate(userId, {
+      isEmailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null
+    });
+  }
 }

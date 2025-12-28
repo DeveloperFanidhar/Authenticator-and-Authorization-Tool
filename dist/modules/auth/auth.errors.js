@@ -1,16 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InvalidRegistrationError = exports.UserAlreadyExistsError = void 0;
-const app_error_1 = require("../../errors/app.error");
+exports.AccountLockedError = exports.InvalidCredentialsError = exports.UserAlreadyExistsError = void 0;
+const app_error_1 = require("../../utils/app-error");
 class UserAlreadyExistsError extends app_error_1.AppError {
     constructor(email) {
-        super(`User with email ${email} already exists`, 409);
+        super(`User already exists with email: ${email}`, 409);
     }
 }
 exports.UserAlreadyExistsError = UserAlreadyExistsError;
-class InvalidRegistrationError extends app_error_1.AppError {
-    constructor(message) {
-        super(message, 400);
+class InvalidCredentialsError extends app_error_1.AppError {
+    constructor() {
+        super("Invalid email or password", 401);
     }
 }
-exports.InvalidRegistrationError = InvalidRegistrationError;
+exports.InvalidCredentialsError = InvalidCredentialsError;
+class AccountLockedError extends app_error_1.AppError {
+    constructor(lockUntil) {
+        super(`Account locked until ${lockUntil.toISOString()}`, 423);
+    }
+}
+exports.AccountLockedError = AccountLockedError;

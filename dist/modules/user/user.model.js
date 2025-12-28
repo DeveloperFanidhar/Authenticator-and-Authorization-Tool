@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const rbac_constants_1 = require("../auth/rbac.constants");
 const UserSchema = new mongoose_1.Schema({
     email: {
         type: String,
@@ -52,6 +53,12 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         required: true
     },
+    role: {
+        type: String,
+        enum: rbac_constants_1.ROLE_VALUES,
+        default: rbac_constants_1.Role.USER,
+        index: true
+    },
     isEmailVerified: {
         type: Boolean,
         default: false
@@ -63,15 +70,40 @@ const UserSchema = new mongoose_1.Schema({
     lockUntil: {
         type: Date,
         default: null
+    },
+    // =========================
+    // PASSWORD RESET
+    // =========================
+    passwordResetToken: {
+        type: String,
+        default: null
+    },
+    passwordResetExpires: {
+        type: Date,
+        default: null
+    },
+    // =========================
+    // EMAIL VERIFICATION
+    // =========================
+    emailVerificationToken: {
+        type: String,
+        default: null
+    },
+    emailVerificationExpires: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
 });
+/**
+ * Hash password before saving
+ */
 UserSchema.pre("save", async function () {
     if (!this.isModified("passwordHash")) {
         return;
     }
-    const saltRounds = 12;
-    this.passwordHash = await bcrypt_1.default.hash(this.passwordHash, saltRounds);
+    this.passwordHash = await bcrypt_1.default.hash(this.passwordHash, 12);
 });
-exports.UserModel = mongoose_1.default.models.User || mongoose_1.default.model("User", UserSchema);
+exports.UserModel = mongoose_1.default.models.User ??
+    mongoose_1.default.model("User", UserSchema);

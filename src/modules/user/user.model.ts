@@ -1,6 +1,7 @@
-import mongoose, { Schema, Model, HydratedDocument } from "mongoose";
-import { IUser } from "./user.types";
+import mongoose, { Schema, HydratedDocument } from "mongoose";
 import bcrypt from "bcrypt";
+import { IUser } from "./user.types";
+import { Role, ROLE_VALUES } from "../auth/rbac.constants";
 
 const UserSchema = new Schema<IUser>(
   {
@@ -18,6 +19,13 @@ const UserSchema = new Schema<IUser>(
       required: true
     },
 
+    role: {
+      type: String,
+      enum: ROLE_VALUES,
+      default: Role.USER,
+      index: true
+    },
+
     isEmailVerified: {
       type: Boolean,
       default: false
@@ -31,6 +39,32 @@ const UserSchema = new Schema<IUser>(
     lockUntil: {
       type: Date,
       default: null
+    },
+
+    // =========================
+    // PASSWORD RESET
+    // =========================
+    passwordResetToken: {
+      type: String,
+      default: null
+    },
+
+    passwordResetExpires: {
+      type: Date,
+      default: null
+    },
+
+    // =========================
+    // EMAIL VERIFICATION
+    // =========================
+    emailVerificationToken: {
+      type: String,
+      default: null
+    },
+
+    emailVerificationExpires: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -38,6 +72,9 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+/**
+ * Hash password before saving
+ */
 UserSchema.pre(
   "save",
   async function (this: HydratedDocument<IUser>) {
@@ -45,10 +82,13 @@ UserSchema.pre(
       return;
     }
 
-    const saltRounds = 12;
-    this.passwordHash = await bcrypt.hash(this.passwordHash, saltRounds);
+    this.passwordHash = await bcrypt.hash(
+      this.passwordHash,
+      12
+    );
   }
 );
 
-export const UserModel: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+export const UserModel =
+  mongoose.models.User ??
+  mongoose.model<IUser>("User", UserSchema);

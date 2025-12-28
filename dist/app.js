@@ -6,26 +6,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createApp = createApp;
 const express_1 = __importDefault(require("express"));
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
-// Error Handler
+const user_routes_1 = __importDefault(require("./modules/user/user.routes"));
 const error_middleware_1 = require("./middlewares/error.middleware");
 function createApp() {
     const app = (0, express_1.default)();
-    // Global Middlewares
+    // GLOBAL MIDDLEWARES
     app.use(express_1.default.json());
-    // Health Check
-    app.get("/health", (req, res) => {
-        res.status(200).json({
-            status: "ok",
-            uptime: process.uptime()
+    // ROUTES
+    app.use("/auth", auth_routes_1.default);
+    app.use("/users", user_routes_1.default);
+    // 404 HANDLER (NO ROUTE MATCHED)
+    app.use((req, res) => {
+        res.status(404).json({
+            success: false,
+            error: "Route not found"
         });
     });
-    // Auth Routes
-    app.use("/auth", auth_routes_1.default);
-    // 404 handler
-    app.use((req, res) => {
-        res.status(404).json({ error: "Route not found" });
-    });
-    // Global error handler (MUST be last)
+    // GLOBAL ERROR HANDLER MUST BE LAST
     app.use(error_middleware_1.errorHandler);
     return app;
 }
