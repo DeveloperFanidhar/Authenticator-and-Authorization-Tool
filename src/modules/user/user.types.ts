@@ -1,8 +1,10 @@
+export type Role = "USER" | "ADMIN";
+
 export interface IUser {
   email: string;
   passwordHash: string;
 
-  role: "USER" | "ADMIN";
+  role: Role;
 
   isEmailVerified: boolean;
 

@@ -1,29 +1,28 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
+import { UserRepository } from "./user.repository";
 import { requireAuth } from "../../middlewares/auth.middleware";
-import { requiresPermission } from "../../middlewares/rbac.middleware";
-import { Permission } from "../auth/rbac.constants";
-import { requireRole } from "../../middlewares/rbac.middleware";
-import { Role } from "../auth/rbac.constants";
-
 
 const router = Router();
-const userController = new UserController();
 
-router.get("/me", requireAuth, userController.getMyProfile);
+// ✅ Dependency injection (same pattern as auth routes)
+const userRepository = new UserRepository();
+const userController = new UserController(userRepository);
 
-router.get(
-    "/",
-    requireAuth,
-    requiresPermission(Permission.READ_USERS),
-    userController.listUsers
-);
+// =========================
+// CURRENT USER
+// =========================
+router.get("/me", requireAuth, userController.getCurrentUser);
+
+// =========================
+// ADMIN OPERATIONS
+// =========================
+router.get("/", requireAuth, userController.getAllUsers);
 
 router.patch(
   "/role",
   requireAuth,
-  requireRole(Role.ADMIN),
-  userController.changeUserRole
+  userController.updateUserRole
 );
 
 export default router;

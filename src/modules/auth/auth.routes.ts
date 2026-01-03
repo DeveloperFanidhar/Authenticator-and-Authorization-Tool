@@ -5,17 +5,12 @@ import { UserRepository } from "../user/user.repository";
 
 const router = Router();
 
-const userRepository = new UserRepository();
-const authService = new AuthService(userRepository);
-const authController = new AuthController(authService);
+const userRepo = new UserRepository();
+const authService = new AuthService(userRepo);
+const controller = new AuthController(authService);
 
-router.post("/register", authController.register);
-router.post("/login", authController.login);
-router.post("/refresh", authController.refresh);
-router.post("/logout", authController.logout);
-
-router.post("/forgot-password", authController.forgotPassword);
-router.post("/reset-password", authController.resetPassword);
-router.post("/verify-email", authController.verifyEmail);
+router.post("/register", controller.register);
+router.post("/login", controller.login);
+router.post("/logout", controller.logout);
 
 export default router;

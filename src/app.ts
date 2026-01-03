@@ -12,6 +12,13 @@ export function createApp() {
   // ROUTES
   app.use("/auth", authRoutes);
   app.use("/users", userRoutes);
+  app.get("/health", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
 
   // 404 HANDLER (NO ROUTE MATCHED)
   app.use((req, res) => {

@@ -1,43 +1,42 @@
 # Authenticator & Authorization Tool
 
-A production-grade authentication and authorization backend built with **TypeScript**, **Express**, and **MongoDB**, designed to demonstrate clean architecture, security-first thinking, and real-world backend practices.
+A production-grade authentication and authorization backend built with **TypeScript**, **Express**, and **MongoDB**, designed with clean architecture, security-first thinking, and long-term reusability in mind.
 
-> This project is intended as a **professional portfolio project** to showcase backend engineering skills, not as a deployed SaaS product.
+> This project is intended as a **professional backend foundation** that can be reused across future projects and deployed in real production environments.
 
 ---
 
 ## 📌 Project Overview
 
-Authentication systems are deceptively complex. Beyond simple login and registration, a robust system must handle:
+Authentication systems are deceptively complex. Beyond basic login and registration, a robust system must handle:
 
-- Secure password storage
+- Secure credential storage
 - Token lifecycle management
-- Account protection against brute-force attacks
-- Password recovery
-- Email verification
+- Account protection against abuse
+- Password recovery and verification
 - Clean error handling
-- Testability
+- Maintainable architecture
 
-This project implements a **complete, real-world authentication system** with those concerns explicitly addressed, following industry-standard patterns and security practices.
+This project implements a **complete, real-world authentication backend**, intentionally designed to be extended, reused, and production-hardened over time.
 
 ---
 
 ## 🧱 Architecture Overview
 
-The project follows a **layered architecture** with strict separation of concerns:
+The system follows a **layered architecture** with strict separation of concerns:
 
 
 ### Layers Explained
 
 - **Routes**
   - Define HTTP endpoints
-  - Wire middleware and controllers
+  - Attach middleware
 - **Controllers**
   - Handle HTTP request/response
   - No business logic
 - **Services**
-  - Core business logic
-  - Authentication flows and security rules
+  - Core authentication logic
+  - Security rules and workflows
 - **Repositories**
   - All database access
   - No business logic
@@ -46,7 +45,48 @@ The project follows a **layered architecture** with strict separation of concern
 - **Middlewares**
   - Authentication, authorization, error handling
 
-This structure improves **maintainability**, **testability**, and **clarity**, and mirrors real production backends.
+This structure mirrors real production backends and enables maintainability, testability, and long-term evolution.
+
+---
+
+## 📐 Architecture Diagram
+
+            ┌─────────────────────┐
+            │      Client         │
+            │ (Postman / Frontend)│
+            └─────────┬───────────┘
+                      │ HTTP Requests
+                      ▼
+            ┌─────────────────────┐
+            │       Routes        │
+            │  (Express Router)   │
+            └─────────┬───────────┘
+                      │
+                      ▼
+            ┌─────────────────────┐
+            │     Controllers     │
+            │ (Request / Response)│
+            └─────────┬───────────┘
+                      │
+                      ▼
+            ┌─────────────────────┐
+            │      Services       │
+            │ (Auth Logic &       │
+            │  Security Rules)    │
+            └─────────┬───────────┘
+                      │
+                      ▼
+            ┌─────────────────────┐
+            │    Repositories     │
+            │ (Database Access)   │
+            └─────────┬───────────┘
+                      │
+                      ▼
+            ┌─────────────────────┐
+            │      MongoDB        │
+            │   (Users, Tokens)   │
+            └─────────────────────┘
+
 
 ---
 
@@ -55,12 +95,11 @@ This structure improves **maintainability**, **testability**, and **clarity**, a
 ### ✅ User Registration
 - Email uniqueness enforced
 - Passwords hashed using bcrypt
-- Clean validation layer
+- Input validation with Zod
 
 ### ✅ Login
 - Secure password comparison
 - JWT access token issuance
-- Refresh token generation
 - Account lockout on repeated failures
 
 ### ✅ JWT-Based Authorization
@@ -82,7 +121,7 @@ This structure improves **maintainability**, **testability**, and **clarity**, a
 ### ✅ Email Verification
 - Secure verification tokens
 - Token hashing and expiry
-- Email verification state tracked in DB
+- Email verification state tracked in database
 
 ---
 
@@ -91,16 +130,16 @@ This structure improves **maintainability**, **testability**, and **clarity**, a
 This project explicitly prioritizes security:
 
 - **Password Hashing**
-  - bcrypt with a strong cost factor
-  - No plaintext passwords ever stored
+  - bcrypt with strong cost factor
+  - No plaintext passwords stored
 
 - **Token Security**
-  - Reset & verification tokens are hashed before storage
+  - Reset and verification tokens hashed before storage
   - Database leaks do not expose usable tokens
 
 - **Account Protection**
   - Failed login attempt tracking
-  - Temporary account lockout after repeated failures
+  - Temporary account lockout
 
 - **JWT Strategy**
   - Short-lived access tokens
@@ -108,26 +147,7 @@ This project explicitly prioritizes security:
 
 - **Error Handling**
   - Centralized JSON error handling
-  - No stack traces or sensitive data leaked to clients
-
----
-
-## 🧪 Testing Strategy
-
-The project includes **end-to-end tests** using Jest and Supertest.
-
-### Test Coverage Includes:
-- Registration flow
-- Duplicate user handling
-- Login success and failure
-- Password reset flow
-- Token-based authentication behavior
-
-### Testing Principles:
-- Separate test database
-- Real HTTP requests (black-box testing)
-- No mocking of business logic
-- Database cleaned after test runs
+  - No sensitive data leaked to clients
 
 ---
 
@@ -139,8 +159,9 @@ The project includes **end-to-end tests** using Jest and Supertest.
 - **Database:** MongoDB
 - **ODM:** Mongoose
 - **Authentication:** JWT
+- **Validation:** Zod
 - **Security:** bcrypt
-- **Testing:** Jest, Supertest
+- **Logging:** Winston
 
 ---
 
@@ -149,67 +170,3 @@ The project includes **end-to-end tests** using Jest and Supertest.
 ### 1️⃣ Install dependencies
 ```bash
 npm install
-
-## 📐 Architecture Diagram
-
-The system follows a layered architecture with clear separation of concerns.
-
-                ┌─────────────────────┐
-                │      Client         │
-                │ (Postman / Frontend)│
-                └─────────┬───────────┘
-                          │ HTTP Requests
-                          ▼
-                ┌─────────────────────┐
-                │       Routes        │
-                │  (Express Router)   │
-                └─────────┬───────────┘
-                          │
-                          ▼
-                ┌─────────────────────┐
-                │     Controllers     │
-                │ (Request / Response)│
-                └─────────┬───────────┘
-                          │
-                          ▼
-                ┌─────────────────────┐
-                │      Services       │
-                │ (Business Logic &   │
-                │  Auth Flows)        │
-                └─────────┬───────────┘
-                          │
-                          ▼
-                ┌─────────────────────┐
-                │    Repositories     │
-                │ (Database Access)   │
-                └─────────┬───────────┘
-                          │
-                          ▼
-                ┌─────────────────────┐
-                │      MongoDB        │
-                │   (User, Tokens)   │
-                └─────────────────────┘
-
-### Key Responsibilities
-
-- **Routes**
-  - Define API endpoints
-  - Attach middleware
-
-- **Controllers**
-  - Handle HTTP input/output
-  - No business logic
-
-- **Services**
-  - Authentication logic
-  - Token lifecycle management
-  - Security rules
-
-- **Repositories**
-  - All database operations
-  - No business rules
-
-- **Middlewares**
-  - JWT authentication
-  - Role-based authorization
-  - Global error handling

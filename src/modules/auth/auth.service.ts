@@ -1,184 +1,60 @@
 import bcrypt from "bcrypt";
+import { env } from "../../config/env";
 import { UserRepository } from "../user/user.repository";
-import {
-  UserAlreadyExistsError,
-  InvalidCredentialsError,
-  AccountLockedError
-} from "./auth.errors";
-import { registerSchema, RegisterInput } from "./auth.validation";
-import { generateAccessToken } from "./token.service";
-import {
-  generateRefreshToken,
-  storeRefreshToken,
-  rotateRefreshToken,
-  revokeRefreshToken
-} from "./refresh-token.service";
-
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_TIME_MS = 15 * 60 * 1000;
+import { Role } from "../user/user.types";
+import { signAccessToken } from "./token.service";
 
 export class AuthService {
-  constructor(
-    private readonly userRepository: UserRepository
-  ) {}
+  constructor(private readonly users: UserRepository) {}
 
-  // =========================
-  // REGISTER
-  // =========================
-  async registerUser(input: RegisterInput) {
-    const parsed = registerSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0].message);
-    }
-
-    const { email, password } = parsed.data;
-
-    const existing = await this.userRepository.findByEmail(email);
+  async register(input: { email: string; password: string }) {
+    const existing = await this.users.findByEmail(input.email);
     if (existing) {
-      throw new UserAlreadyExistsError(email);
+      throw new Error("User already exists");
     }
 
-    const user = await this.userRepository.createUser({
-      email,
-      passwordHash: password
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    const role: Role = "USER";
+
+    const user = await this.users.createUser({
+      email: input.email,
+      passwordHash,
+      role,
+      isEmailVerified: false
     });
 
     return {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email
     };
   }
 
-  // =========================
-  // LOGIN
-  // =========================
-  async loginUser(input: {
-    email: string;
-    password: string;
-  }) {
-    const { email, password } = input;
-
-    const user = await this.userRepository.findByEmail(email);
+  async login(input: { email: string; password: string }) {
+    const user = await this.users.findByEmail(input.email);
     if (!user) {
-      throw new InvalidCredentialsError();
+      throw new Error("Invalid credentials");
     }
 
-    if (user.lockUntil && user.lockUntil > new Date()) {
-      throw new AccountLockedError(user.lockUntil);
+    const valid = await bcrypt.compare(input.password, user.passwordHash);
+    if (!valid) {
+      throw new Error("Invalid credentials");
     }
 
-    const match = await bcrypt.compare(
-      password,
-      user.passwordHash
+    const accessToken = signAccessToken(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role
+      },
+      env.JWT_ACCESS_SECRET,
+      env.JWT_ACCESS_TTL
     );
 
-    if (!match) {
-      throw new InvalidCredentialsError();
-    }
-
-    const refreshToken = generateRefreshToken();
-    await storeRefreshToken(user._id.toString(), refreshToken);
-
-    const accessToken = generateAccessToken({
-      sub: user._id.toString(),
-      email: user.email,
-      role: user.role
-    });
-
-    return {
-      id: user._id.toString(),
-      email: user.email,
-      accessToken,
-      refreshToken
-    };
+    return { accessToken };
   }
 
-  // =========================
-  // REFRESH TOKENS
-  // =========================
-  async refreshTokens(input: {
-    refreshToken: string;
-  }) {
-    const { userId, newToken } =
-      await rotateRefreshToken(input.refreshToken);
-
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new InvalidCredentialsError();
-    }
-
-    const accessToken = generateAccessToken({
-      sub: userId,
-      email: user.email,
-      role: user.role
-    });
-
-    return {
-      accessToken,
-      refreshToken: newToken
-    };
-  }
-
-  // =========================
-  // LOGOUT
-  // =========================
-  async logout(input: { refreshToken: string }) {
-    await revokeRefreshToken(input.refreshToken);
-  }
-
-  // =========================
-  // PASSWORD RESET
-  // =========================
-  async forgotPassword(input: { email: string }) {
-    const user = await this.userRepository.findByEmail(input.email);
-    if (!user) {
-      return { resetToken: "ok" };
-    }
-
-    const token =
-      await this.userRepository.setPasswordResetToken(
-        user._id.toString()
-      );
-
-    return { resetToken: token };
-  }
-
-  async resetPassword(input: {
-    token: string;
-    newPassword: string;
-  }) {
-    const user =
-      await this.userRepository.findByResetToken(
-        input.token
-      );
-
-    if (!user) {
-      throw new InvalidCredentialsError();
-    }
-
-    user.passwordHash = input.newPassword;
-    await user.save();
-
-    await this.userRepository.clearResetToken(
-      user._id.toString()
-    );
-  }
-
-  // =========================
-  // EMAIL VERIFICATION
-  // =========================
-  async verifyEmail(input: { token: string }) {
-    const user =
-      await this.userRepository.findByEmailVerificationToken(
-        input.token
-      );
-
-    if (!user) {
-      throw new InvalidCredentialsError();
-    }
-
-    await this.userRepository.verifyEmail(
-      user._id.toString()
-    );
+  async logout() {
+    // Stateless JWT → nothing to do
+    return;
   }
 }

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../modules/auth/token.service";
-import { Role } from "../modules/auth/rbac.constants";
+import { Role } from "../modules/user/user.types";
+import { env } from "../config/env";
 
 /**
  * Request object after authentication
@@ -15,8 +16,6 @@ export interface AuthenticatedRequest extends Request {
 
 /**
  * Authentication middleware
- * - Validates JWT access token
- * - Attaches user info to request
  */
 export function requireAuth(
   req: AuthenticatedRequest,
@@ -29,10 +28,14 @@ export function requireAuth(
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const token = authHeader.substring(7); // remove "Bearer "
+  const token = authHeader.substring(7);
 
   try {
-    const payload = verifyAccessToken(token);
+    const payload = verifyAccessToken<{
+      sub: string;
+      email: string;
+      role: Role;
+    }>(token, env.JWT_ACCESS_SECRET);
 
     req.user = {
       id: payload.sub,
